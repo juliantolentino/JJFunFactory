@@ -4,6 +4,7 @@
 import java.io.* ;
 import java.sql.* ;
 import java.util.*;
+import java.lang.StringBuilder;
 
 
 
@@ -13,9 +14,9 @@ public class JJFunFactory {
 		Statement sqlStatement  = null;
 		ResultSet myResultSet  = null;
 
-		// 1st two options: login or sign up
 		
 		int decision = 0;
+		Scanner in = new Scanner(System.in);
 		
 		try {
 			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
@@ -25,57 +26,74 @@ public class JJFunFactory {
 	
 			// Create a Statement
 			sqlStatement = sqlcon.createStatement ();
-	
+			
 			
 			/// 1 == login, 2 == sign up
 			decision = intro();
 			String loginResult = "", userID = "", user_sts = "";
-			if(decision == 1){
-				do{
-					loginResult = login(sqlcon, sqlStatement, myResultSet);
-				}while(loginResult.equals("-"));
-				String [] tokens = loginResult.split("-");
-				userID = tokens[0];
-				user_sts = tokens[1];
+			String tokens[];
+			
+			switch(decision){
+			case 1: 
+						do{
+							loginResult = login(sqlcon, sqlStatement, myResultSet);
+						}while(loginResult.equals("-"));
+						tokens = loginResult.split("-");
+						userID = tokens[0];
+						user_sts = tokens[1];
+						break;
+			case 2:
+						// Sign up method
+						signUp(sqlcon, sqlStatement, myResultSet);
+						do{
+							loginResult = login(sqlcon, sqlStatement, myResultSet);
+						}while(loginResult.equals("-"));
+						tokens = loginResult.split("-");
+						userID = tokens[0];
+						user_sts = tokens[1];
+						break;
+			case 3:
+						browse(sqlcon, sqlStatement, myResultSet);
+					
+						do{
+							System.out.println("\nSearch: 1 \nLogin: 2\nSignup: 3\nLeave: -1 ");
+							decision = in.nextInt();
+							switch(decision) {
+							case 1:	search(sqlcon, sqlStatement, myResultSet);
+									break;
+							case 2: 
+									do{
+										loginResult = login(sqlcon, sqlStatement, myResultSet);
+									}while(loginResult.equals("-"));
+									tokens = loginResult.split("-");
+									userID = tokens[0];
+									user_sts = tokens[1];
+									break;
+							case 3: 
+									signUp(sqlcon, sqlStatement, myResultSet);
+									do{
+										loginResult = login(sqlcon, sqlStatement, myResultSet);
+									}while(loginResult.equals("-"));
+									tokens = loginResult.split("-");
+									userID = tokens[0];
+									user_sts = tokens[1];
+									break;
+									
+							case -1: System.out.println("Thanks for visiting our store!");
+									break;
+							default: System.out.println("Value not an option.");
+									break;
+							}
+						}while(decision != -1 && decision != 2 && decision != 3);
+						break;
 			}
-			else if(decision == 2){
-				// Sign up method
-				signUp(sqlcon, sqlStatement, myResultSet);
+			
+			if (user_sts.equals("0")){
+				customer(sqlcon, sqlStatement, myResultSet);
+			}
+			
+			
 
-				
-			}
-			else if(decision == 3){
-				browse(sqlcon, sqlStatement, myResultSet);
-			}
-			
-			
-
-			
-			
-			// call sqlStatement.executeQuery ()
-			//String q = "select Student.ID, name, GPA from Student, Apply where UnivName = \'UF\' and Student.ID = Apply.ID";
-			String q = "select * FROM USERS ORDER BY ID ASC";
-			
-			System.out.println(q);      
-			myResultSet = sqlStatement.executeQuery(q);
-			
-			System.out.println("------------------------------------------------");
-			System.out.println("Users of JJ's Fun Factory");
-			
-			System.out.println("------------------------------------------------");
-			System.out.println("ID\tName\t\tAddress\t\t\t\tIs Staff\tEmail\t\t\t\t\t\tPassword");
-			
-			// Move to next row and & its contents to the html output
-			while(myResultSet.next())
-			{
-			  String id = myResultSet.getObject(1).toString();
-			  String name = myResultSet.getObject(2).toString();
-			  String address = myResultSet.getObject(3).toString();
-			  String is_staff = myResultSet.getObject(4).toString();
-			  String email = myResultSet.getObject(5).toString();
-			  String password = myResultSet.getObject(6).toString();
-			  System.out.println(id+"\t"+name+"\t"+address+"\t"+is_staff+"\t\t"+email+"\t"+password);
-			}
 
 			sqlStatement.close();
 			
@@ -125,6 +143,8 @@ public class JJFunFactory {
 			
 			int maxID = Integer.parseInt(myResultSet.getObject(1).toString()); 
 			int newID = maxID + 1;
+			System.out.println("Sign Up Script");
+			System.out.println("--------------------------------------------");
 			System.out.println("Enter name:");
 			String name = in.nextLine();
 			
@@ -132,8 +152,7 @@ public class JJFunFactory {
 			String address = in.next();
 
 			System.out.println("Are you staff? (Y/N):");
-			
-			
+	
 			String staff = in.next();
 			int staffID = 0;
 			do{
@@ -144,8 +163,6 @@ public class JJFunFactory {
 					staffID = 0;
 				}
 			}while(!staff.equals("Y") && !staff.equals("N"));
-			
-
 			
 			System.out.println("Enter email:");
 			String email = in.next();
@@ -175,6 +192,8 @@ public class JJFunFactory {
 
 		try{
 			
+			System.out.println("Login Script");
+			System.out.println("--------------------------------------------");
 			System.out.println("Enter name:");
 			String name = in.nextLine();
 			
@@ -215,18 +234,130 @@ public class JJFunFactory {
 	}
 	static void browse(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
 		try{
-			String r = "SELECT NAME from PRODUCTS";
+			System.out.println("Current Store Selection");
+			System.out.println("--------------------------------------------");
+			System.out.println("NAME\t\tPRICE\tQUANTITY");
+			String r = "SELECT NAME, PRICE, STOCKQUANTITY from PRODUCTS";
 			myResultSet = sqlStatement.executeQuery(r);
 			while(myResultSet.next())
 			{
 			  String name = myResultSet.getObject(1).toString();
-			  System.out.println(name);
+			  String price = myResultSet.getObject(2).toString();
+			  String stockQuantity = myResultSet.getObject(3).toString();
+
+			  System.out.println(name + "\t" + price + "\t" + stockQuantity);
 			}
 		}
 		catch (SQLException ex)
 		{
 			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
 		}
+	}
+	
+	static void search(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		Scanner in = new Scanner(System.in);
+		
+		try{
+			System.out.println("Search Script");
+			System.out.println("--------------------------------------------");
+			System.out.println("Enter keyword for search:");
+			String keyword = in.nextLine();
+			keyword = convert(keyword);
+			
+			String r = "SELECT NAME from PRODUCTS WHERE name LIKE '%" + keyword + "%'";
+			myResultSet = sqlStatement.executeQuery(r);
+			
+			while(myResultSet.next())
+			{
+			  keyword = myResultSet.getObject(1).toString();
+			  System.out.println(keyword);
+			}
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+	}
+	static String convert(String str){
+		StringBuilder conversion  = new StringBuilder(str);
+		for(int i = 0;  i < conversion.length(); i++){
+			char temp = conversion.charAt(i);
+			if((int)temp >= 97 && (int)temp <= 122){
+				temp -= 32;
+				conversion.setCharAt(i, temp);
+			}
+			
+		}
+		return conversion.toString();
+	}
+	static void customer(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		int decision = 0;
+		Scanner in = new Scanner(System.in);
+		
+		browse(sqlcon, sqlStatement, myResultSet);
+	
+		do{
+			System.out.println("\nBrowse: 1 \nSearch: 2 \nPlace Order: 3\nCheckout: 4\nEdit or Delete Account: 5\nLeave: -1 ");
+			decision = in.nextInt();
+			switch(decision) {
+			case 1:	browse(sqlcon, sqlStatement, myResultSet);
+					break;
+			case 2: search(sqlcon, sqlStatement, myResultSet);
+					break;
+			case 3: placeOrder(sqlcon, sqlStatement, myResultSet);
+					break;
+			case 4: //checkout
+					break;
+			case 5: //edit delete account
+				break;
+			case -1: System.out.println("Thanks for visiting our store!");
+					break;
+			default: System.out.println("Value not an option.");
+					break;
+			}
+		}while(decision != -1 );
+	}
+	static void placeOrder(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		Scanner in = new Scanner(System.in);
+		
+		try{
+			System.out.println("Place Order Script");
+			System.out.println("--------------------------------------------");
+			System.out.println("Enter product name:");
+			String name = in.nextLine();
+			name = convert(name);
+			System.out.println("Enter quantity of product:");
+			String quantity = in.next();
+			
+			
+			String q = "select STOCKQUANTITY FROM PRODUCTS WHERE name = '" + name + "'";
+			myResultSet = sqlStatement.executeQuery(q);
+			boolean hasRows = false;
+			while(myResultSet.next()){
+				int quantityOfProduct = Integer.parseInt(myResultSet.getObject(1).toString());
+				int quantityNeededByUser = Integer.parseInt(quantity);
+				quantityOfProduct -= quantityNeededByUser;
+				quantity = Integer.toString(quantityOfProduct);
+			}
+			
+			String r = "UPDATE PRODUCTS SET STOCKQUANTITY = '" + quantity + "' WHERE name = '" + name + "' AND STOCKQUANTITY > = '" + quantity + "'";
+			
+			// TO DO put proper error checking for an invalid number on query
+			myResultSet = sqlStatement.executeQuery(r);
+			if(myResultSet.next()){
+				hasRows = true;
+			}
+			
+			if(!hasRows){
+				System.out.println("Order not placed.");
+			}
+
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+
 	}
 
 }
