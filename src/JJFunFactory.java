@@ -59,6 +59,12 @@ public class JJFunFactory {
 					
 						do{
 							System.out.println("\nSearch: 1 \nLogin: 2\nSignup: 3\nLeave: -1 ");
+							
+							while(!in.hasNextInt()){
+								System.out.println("Value not an option.");
+								in.nextLine();
+							}
+							
 							decision = in.nextInt();
 							switch(decision) {
 							case 1:	search(sqlcon, sqlStatement, myResultSet);
@@ -120,7 +126,12 @@ public class JJFunFactory {
 			System.out.println("Login: 1");
 			System.out.println("Sign up: 2");
 			System.out.println("Browse: 3");
+			while(!in.hasNextInt()){
+				System.out.println("Value not an option.");
+				in.nextLine();
+			}
 			input = in.nextInt();
+			
 			
 			if(input != 1 && input != 2 && input != 3){
 				System.out.println("Invalid input");
@@ -155,15 +166,19 @@ public class JJFunFactory {
 
 			System.out.println("Are you staff? (Y/N):");
 	
-			String staff = in.next();
+			String staff = "";
 			int staffID = 0;
 			do{
+				staff = in.next();
 				if (staff.equals("Y")){
 					staffID = 1;
 				}
 				else if (staff.equals("N")){
 					staffID = 0;
 				}
+				else
+					System.out.println("Value not an option.");
+					
 			}while(!staff.equals("Y") && !staff.equals("N"));
 			
 			System.out.println("Enter email:");
@@ -239,7 +254,7 @@ public class JJFunFactory {
 			System.out.println("Current Store Selection");
 			System.out.println("--------------------------------------------");
 			System.out.println("NAME\t\tPRICE\tQUANTITY");
-			String r = "SELECT NAME, PRICE, STOCKQUANTITY from PRODUCTS";
+			String r = "SELECT NAME, PRICE, STOCKQUANTITY from PRODUCTS ORDER BY PRICE DESC";
 			myResultSet = sqlStatement.executeQuery(r);
 			while(myResultSet.next())
 			{
@@ -299,7 +314,7 @@ public class JJFunFactory {
 		browse(sqlcon, sqlStatement, myResultSet);
 	
 		do{
-			System.out.println("\nBrowse: 1 \nSearch: 2 \nPlace Order: 3\nCheckout: 4\nEdit or Delete Account: 5\nLeave: -1 ");
+			System.out.println("\nBrowse: 1 \nSearch: 2 \nPlace Order: 3\nCheckout: 4\nUpdate or Delete Account: 5\nLeave: -1 ");
 			decision = in.nextInt();
 			switch(decision) {
 			case 1:	browse(sqlcon, sqlStatement, myResultSet);
@@ -310,8 +325,8 @@ public class JJFunFactory {
 					break;
 			case 4: checkOut(sqlcon, sqlStatement, myResultSet, userID);
 					break;
-			case 5: //edit delete account
-				break;
+			case 5: updateOrDeleteAccount(sqlcon, sqlStatement, myResultSet, userID);
+					break;
 			case -1: System.out.println("Thanks for visiting our store!");
 					break;
 			default: System.out.println("Value not an option.");
@@ -386,7 +401,6 @@ public class JJFunFactory {
 			
 			if(!myResultSet.next()){
 				try{
-					System.out.println("heyyy");
 
 					SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 					java.util.Date myDate = format.parse(getCurrentTimeStamp());
@@ -508,7 +522,110 @@ public class JJFunFactory {
 	    String strDate = sdf.format(now);
 	    return strDate;
 	}
+	
+	static void updateOrDeleteAccount(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet, String userID){
+		try{
+			System.out.println("Account Details");
+			System.out.println("-----------------------------------");
+			System.out.println("NAME\t\tADDRESS\t\t\tIS STAFF\tEMAIL\tPASSWORD");
+			String t = "SELECT NAME, ADDRESS, IS_STAFF, EMAIL, PASSWORD FROM USERS WHERE ID = '" + userID + "'";
+			myResultSet = sqlStatement.executeQuery(t);
+			while(myResultSet.next())
+			{
+				String name = myResultSet.getObject(1).toString();
+				String address = myResultSet.getObject(2).toString();
+				String isStaff = myResultSet.getObject(3).toString();
+				String email = myResultSet.getObject(4).toString();
+				String password = myResultSet.getObject(5).toString();
+				
+				
+				System.out.println(name + "\t" + address + "\t" + isStaff + "\t" + email + "\t" + password);
+				
+				
+				
+			}
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+		
+		int decision = 0;
+		Scanner in = new Scanner(System.in);
+	
+		do{
+			System.out.println("\nUpdate Account: 1 \nDelete Account: 2 \nReturn to Customer Menu: -1");
 
+			while (!in.hasNextInt()) {
+				System.out.println("Value not an option.");
+				in.nextLine();
+			}
+			decision = in.nextInt();
+			
+			if(decision == 1){
+				
+				try{
+					
+					System.out.println("Update Script");
+					System.out.println("--------------------------------------------");
+					System.out.println("Enter name:");
+					String name = in.next();
+					
+					System.out.println("Enter address:");
+					String address = in.next();
+
+					System.out.println("Are you staff? (Y/N):");
+			
+					String staff = "";
+					int staffID = 0;
+					do{
+						staff = in.next();
+						if (staff.equals("Y")){
+							staffID = 1;
+						}
+						else if (staff.equals("N")){
+							staffID = 0;
+						}
+						else
+							System.out.println("Value not an option.");
+							
+					}while(!staff.equals("Y") && !staff.equals("N"));
+
+					
+					System.out.println("Enter email:");
+					String email = in.next();
+
+					System.out.println("Enter Password:");
+					String password = in.next();
+
+					String r = "UPDATE USERS SET NAME = '" + name +  "', ADDRESS = '" + address + "', IS_STAFF = " + staffID + ", EMAIL = '" + email + "', PASSWORD = '" + password + "' WHERE ID = '" + userID + "'";
+					myResultSet = sqlStatement.executeQuery(r);
+				
+					
+					
+				}
+				catch (SQLException ex)
+				{
+					System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+				}
+				
+			}
+			else if(decision == 2){
+				try{
+					String s = "DELETE FROM USERS WHERE ID = '" + userID + "'";
+					myResultSet = sqlStatement.executeQuery(s);
+				}
+				catch (SQLException ex)
+				{
+					System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+				}
+				System.out.println("Account deleted.\nThank you for visiting our store!");
+				System.exit(0);
+			}
+			else
+				return;
+		}while(decision != -1 );
+	}
 }
 
 
