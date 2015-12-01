@@ -5,6 +5,8 @@ import java.io.* ;
 import java.sql.* ;
 import java.util.*;
 import java.lang.StringBuilder;
+import java.text.*;
+import java.util.Date;
 
 
 
@@ -89,7 +91,7 @@ public class JJFunFactory {
 			}
 			
 			if (user_sts.equals("0")){
-				customer(sqlcon, sqlStatement, myResultSet);
+				customer(sqlcon, sqlStatement, myResultSet, userID);
 			}
 			
 			
@@ -290,7 +292,7 @@ public class JJFunFactory {
 		}
 		return conversion.toString();
 	}
-	static void customer(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+	static void customer(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet, String userID){
 		int decision = 0;
 		Scanner in = new Scanner(System.in);
 		
@@ -304,9 +306,9 @@ public class JJFunFactory {
 					break;
 			case 2: search(sqlcon, sqlStatement, myResultSet);
 					break;
-			case 3: placeOrder(sqlcon, sqlStatement, myResultSet);
+			case 3: placeOrder(sqlcon, sqlStatement, myResultSet, userID);
 					break;
-			case 4: //checkout
+			case 4: checkOut(sqlcon, sqlStatement, myResultSet, userID);
 					break;
 			case 5: //edit delete account
 				break;
@@ -317,7 +319,7 @@ public class JJFunFactory {
 			}
 		}while(decision != -1 );
 	}
-	static void placeOrder(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+	static void placeOrder(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet, String userID){
 		Scanner in = new Scanner(System.in);
 		
 		try{
@@ -333,24 +335,105 @@ public class JJFunFactory {
 			String q = "select STOCKQUANTITY FROM PRODUCTS WHERE name = '" + name + "'";
 			myResultSet = sqlStatement.executeQuery(q);
 			boolean hasRows = false;
+			int quantityOfProduct = 0, quantityNeededByUser = 0;
 			while(myResultSet.next()){
-				int quantityOfProduct = Integer.parseInt(myResultSet.getObject(1).toString());
-				int quantityNeededByUser = Integer.parseInt(quantity);
+				quantityOfProduct = Integer.parseInt(myResultSet.getObject(1).toString());
+				quantityNeededByUser = Integer.parseInt(quantity);
+				if(quantityNeededByUser > quantityOfProduct || quantityNeededByUser < 1){
+					System.out.println("Order not placed.");
+					return;
+				}
 				quantityOfProduct -= quantityNeededByUser;
 				quantity = Integer.toString(quantityOfProduct);
 			}
 			
-			String r = "UPDATE PRODUCTS SET STOCKQUANTITY = '" + quantity + "' WHERE name = '" + name + "' AND STOCKQUANTITY > = '" + quantity + "'";
 			
-			// TO DO put proper error checking for an invalid number on query
-			myResultSet = sqlStatement.executeQuery(r);
-			if(myResultSet.next()){
+			int priceTimesQuantity = 0;
+			String s = "select PRICE FROM PRODUCTS WHERE name = '" + name + "'";
+			myResultSet = sqlStatement.executeQuery(s);
+			while(myResultSet.next()){
+				priceTimesQuantity = Integer.parseInt(myResultSet.getObject(1).toString());
+				priceTimesQuantity *= quantityNeededByUser;
+			}
+			
+			String productID = "";
+			String t = "select ID FROM PRODUCTS WHERE name = '" + name + "'";
+			myResultSet = sqlStatement.executeQuery(t);
+			while(myResultSet.next()){
+				productID = myResultSet.getObject(1).toString();
 				hasRows = true;
 			}
-			
-			if(!hasRows){
-				System.out.println("Order not placed.");
+
+			int productQuantityFromOrders = 0;
+			int totalPriceFromOrders = 0;
+			String v = "select PRODUCTQUANTITY, TOTALPRICE FROM ORDERS WHERE PRODUCTID = '" + productID + "'";
+			myResultSet = sqlStatement.executeQuery(v);
+			while(myResultSet.next()){
+				productQuantityFromOrders =  Integer.parseInt(myResultSet.getObject(1).toString());
+				productQuantityFromOrders += quantityNeededByUser;
+				totalPriceFromOrders = Integer.parseInt(myResultSet.getObject(2).toString());
+				totalPriceFromOrders += priceTimesQuantity;
+
+				hasRows = true;
 			}
+
+			String u = "SELECT * FROM ORDERS WHERE ID = '" + userID + "' AND PRODUCTID = '" + productID + "'";
+
+			//String u = "UPDATE ORDERS SET PRODUCTQUANTITY = " + productQuantityFromOrders + ", TOTALPRICE = " + totalPriceFromOrders + " WHERE ID = '" + userID + "' AND PRODUCTID = '" + productID + "'";
+			myResultSet = sqlStatement.executeQuery(u);
+
+		
+			
+			if(!myResultSet.next()){
+				try{
+					System.out.println("heyyy");
+
+					SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+					java.util.Date myDate = format.parse(getCurrentTimeStamp());
+					PreparedStatement pstmt = sqlcon.prepareStatement(
+							"INSERT INTO ORDERS ( ID, TOTALPRICE, DATEOFORDER, PAID, PRODUCTID, PRODUCTQUANTITY ) " +
+							" values (?, ?, ?, ?, ?, ? )");
+					pstmt.setString(1, userID);
+					pstmt.setString(2, Integer.toString(priceTimesQuantity));
+					java.sql.Date sqlDate = new java.sql.Date( myDate.getTime() );
+					pstmt.setDate(3, sqlDate);
+					pstmt.setString(4, "0");
+					pstmt.setString(5, productID);
+					pstmt.setString(6, Integer.toString(quantityNeededByUser));
+					pstmt.executeUpdate();
+					System.out.println("Order placed.");
+					
+
+				} catch(java.text.ParseException e){
+					e.printStackTrace();
+				}
+				
+				String r = "UPDATE PRODUCTS SET STOCKQUANTITY = '" + quantity + "' WHERE name = '" + name + "' AND STOCKQUANTITY > = '" + quantity + "'";
+				myResultSet = sqlStatement.executeQuery(r);
+				if(myResultSet.next()){
+					hasRows = true;
+				}
+				
+				// TO DO replace order if same product is chosen before checkout
+				
+				
+				if(!hasRows){
+					System.out.println("Order not placed.");
+				}
+				
+				
+			}
+			else{
+				String y = "UPDATE ORDERS SET PRODUCTQUANTITY = " + productQuantityFromOrders + ", TOTALPRICE = " + totalPriceFromOrders + " WHERE ID = '" + userID + "' AND PRODUCTID = '" + productID + "'";
+				myResultSet = sqlStatement.executeQuery(y);
+				String z = "UPDATE PRODUCTS SET STOCKQUANTITY = '" + quantity + "' WHERE name = '" + name + "' AND STOCKQUANTITY > = '" + quantity + "'";
+				myResultSet = sqlStatement.executeQuery(z);
+				if(myResultSet.next()){
+					hasRows = true;
+				}
+			}
+			
+			
 
 		}
 		catch (SQLException ex)
@@ -358,6 +441,72 @@ public class JJFunFactory {
 			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
 		}
 
+	}
+	
+	static void checkOut(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet, String userID){
+		try{
+			System.out.println("Current Orders");
+			System.out.println("-----------------------------------");
+			System.out.println("NAME\t\tSUBPRICE\tQUANTITY");
+			String r = "SELECT PRODUCTID, PRODUCTQUANTITY, TOTALPRICE FROM ORDERS WHERE ID = '" + userID + "' AND PAID = 0";
+			myResultSet = sqlStatement.executeQuery(r);
+			
+			int totalPrice = 0;
+			Statement sqlStatementCheckout  = null;
+			sqlStatementCheckout = sqlcon.createStatement ();
+
+			
+			while(myResultSet.next())
+			{
+				String productID = myResultSet.getObject(1).toString();
+				String productQuantity = myResultSet.getObject(2).toString();
+				String productSubPrice = myResultSet.getObject(3).toString();
+				
+				String s = "SELECT NAME FROM PRODUCTS WHERE ID = '" + productID + "'";
+				ResultSet myOrderSet  = null;
+
+				myOrderSet = sqlStatementCheckout.executeQuery(s);
+				myOrderSet.next();
+				String productName = myOrderSet.getObject(1).toString();
+				
+				totalPrice += Integer.parseInt(productSubPrice);
+				
+				System.out.println(productName + "\t" + productSubPrice + "\t\t" + productQuantity);
+				
+				
+				
+			}
+			
+			if(totalPrice != 0){
+				System.out.println("\nTotal Price: " + totalPrice);
+				System.out.println("Confirm checkout? Yes:1, No: 0");
+				Scanner in = new Scanner(System.in);
+				int decision = in.nextInt();
+				if(decision == 1){
+					String u = "UPDATE ORDERS SET PAID = 1 WHERE PAID = 0 AND ID = '" + userID + "'";
+					myResultSet = sqlStatement.executeQuery(u);
+					myResultSet.next();
+					
+					
+				}
+				else{
+					return;
+				}
+			}
+			
+			
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+	}
+	
+	public static String getCurrentTimeStamp() {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+	    Date now = new Date();
+	    String strDate = sdf.format(now);
+	    return strDate;
 	}
 
 }
