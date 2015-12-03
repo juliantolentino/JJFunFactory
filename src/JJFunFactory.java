@@ -656,7 +656,7 @@ public class JJFunFactory {
 				return;
 		}while(decision != -1 );
 	}
-	// staff initial switch statement
+// staff initial switch statement
 	static void staff(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet, String userID){
 		int decision = 0;
 		Scanner in = new Scanner(System.in);
@@ -686,7 +686,7 @@ public class JJFunFactory {
 					+ "\nSearch: 2 "
 					+ "\nPlace Order: 3"
 					+ "\nCheckout: 4"
-					+ "\nTotal Sales In All Orders : 5"
+					+ "\nTotal Sales In All orders : 5"
 					+ "\nEdit User Accounts : 6"
 					+ "\nEdit Products : 7"
 					+ "\nEdit Discounts : 8"
@@ -718,7 +718,7 @@ public class JJFunFactory {
 					break;
 			case 8: discountMenu(sqlcon, sqlStatement, myResultSet, userID);
 					break;
-			case 9: // edit categories
+			case 9: categoryMenu(sqlcon, sqlStatement, myResultSet);
 					break;
 			case 10: // edit orders
 					break;
@@ -803,6 +803,52 @@ public class JJFunFactory {
 				pstmt.setDate(6, sqlDate);
 				
 				
+				System.out.println("-------\nAvailable categories\nID\t\tNAME");
+				String s = "SELECT ID, NAME FROM CATEGORY ORDER BY ID";
+				myResultSet = sqlStatement.executeQuery(s);
+				while(myResultSet.next()){
+					String categoryID = myResultSet.getObject(1).toString();
+					String categoryName = myResultSet.getObject(2).toString();
+					System.out.printf("%4s %15s%n", categoryID, categoryName);
+					
+				}
+				
+				String productCategoryInsertion = "";
+				boolean validCategory = false;
+				System.out.println("Enter category number:");
+				do{
+					
+					while(!in.hasNextInt()){
+						System.out.println("Value not an option.");
+						in.nextLine();
+					}
+					int category = in.nextInt();
+					q = "SELECT * FROM CATEGORY WHERE ID = " + category;
+					myResultSet = sqlStatement.executeQuery(q);
+					if(myResultSet.next()){
+						validCategory = true;
+						//add to product category method
+						
+						q = "SELECT MAX(ID) FROM PRODUCTCATEGORY";
+						myResultSet = sqlStatement.executeQuery(q);
+						myResultSet.next();
+						int maxIdProductCategory = Integer.parseInt(myResultSet.getObject(1).toString()); 
+						int newIdProductCategory = maxIdProductCategory + 1;
+						
+						productCategoryInsertion = "INSERT INTO PRODUCTCATEGORY VALUES(" + newIdProductCategory + "," + category + "," + newID + ")";								
+
+					}
+					else{
+						System.out.println("Value not an option.");
+					}
+					
+					
+				}
+				while(validCategory == false);
+				
+				
+			
+				
 				pstmt.executeUpdate();
 				System.out.println("Product Added.");
 				
@@ -827,7 +873,9 @@ public class JJFunFactory {
 				pstmt.executeUpdate();
 				
 				
-				
+				myResultSet = sqlStatement.executeQuery(productCategoryInsertion);
+				myResultSet.next();
+
 				
 			} catch(java.text.ParseException e){
 				e.printStackTrace();
@@ -1500,6 +1548,169 @@ public class JJFunFactory {
 			  String availableQuantity = myResultSet.getObject(3).toString();
 			  String productID = myResultSet.getObject(4).toString();
 			  System.out.printf("%4s %15s %8s %15s%n", id, name, availableQuantity, productID);
+			}
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+		
+	}
+	
+	static void categoryMenu(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		int decision = 0;
+		Scanner in = new Scanner(System.in);
+		do{
+			displayCategory(sqlcon, sqlStatement, myResultSet);
+			
+			System.out.println("\nAdd Category: 1 "
+					+ "\nUpdate Category: 2 "
+					+ "\nDelete Category: 3"
+					+ "\nReturn to Staff Menu: -1 ");
+			
+			while(!in.hasNextInt()){
+				System.out.println("Value not an option.");
+				in.nextLine();
+			}
+			
+			decision = in.nextInt();
+			switch(decision) {
+			case 1:	
+					addCategory( sqlcon,  sqlStatement,  myResultSet);
+					break;
+			case 2: editCategory( sqlcon,  sqlStatement,  myResultSet);
+					break;
+			case 3: deleteCategory( sqlcon,  sqlStatement,  myResultSet);
+					break;
+			case -1: System.out.println("Returning to Staff Menu");
+					break;
+			default: System.out.println("Value not an option.");
+					break;
+			}
+		}while(decision != -1 );
+	}
+	
+	static void addCategory(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		Scanner in = new Scanner(System.in);
+		try{
+			String q = "SELECT MAX(ID) FROM CATEGORY";
+			myResultSet = sqlStatement.executeQuery(q);
+			myResultSet.next();
+			
+			int maxID = Integer.parseInt(myResultSet.getObject(1).toString()); 
+			int newID = maxID + 1;
+			System.out.println("Add CATEGORY Script");
+			System.out.println("--------------------------------------------");
+			
+			PreparedStatement pstmt = sqlcon.prepareStatement(
+					"INSERT INTO CATEGORY ( ID, NAME, DESCRIPTION ) " +
+					" values (?, ?, ? )");
+			pstmt.setString(1, Integer.toString(newID));
+			System.out.println("Enter category name:");
+			String name = convert(in.nextLine());
+			pstmt.setString(2, name);
+			System.out.println("Enter description:");
+			String description = convert(in.nextLine());
+			pstmt.setString(3, description);	
+			
+			pstmt.executeUpdate();
+			System.out.println("Category Added.");
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+		
+
+
+	}
+	static void editCategory(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		Scanner in = new Scanner(System.in);
+		try{
+			System.out.println("Edit Category Script");
+			System.out.println("--------------------------------------------");
+			System.out.println("Enter category name:");
+			String name = convert(in.nextLine());
+			String t = "SELECT ID, NAME, DESCRIPTION FROM CATEGORY WHERE NAME = '" + name + "'";
+			myResultSet = sqlStatement.executeQuery(t);
+			String id = "";
+			String description = "";
+			if(myResultSet.next()){
+				id = myResultSet.getObject(1).toString();
+				name = myResultSet.getObject(2).toString();
+				description = myResultSet.getObject(3).toString();
+	
+				
+				System.out.println("ID: " + id + "\nName: " + name + "\nDescription: " + description);
+				
+				System.out.println("Update category name:");
+				name = convert(in.nextLine());
+				
+				System.out.println("Update description:");
+				description = convert(in.nextLine());
+
+				String u = "UPDATE CATEGORY SET NAME = '" + name +  "', DESCRIPTION = '" + description +  "' WHERE ID = '" + id + "'";
+				myResultSet = sqlStatement.executeQuery(u);
+				System.out.println("Category updated.");
+
+			} 
+			else
+				System.out.println("No category of that name.");
+			
+			
+			
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+		
+
+
+	}
+	
+	static void deleteCategory(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		Scanner in = new Scanner(System.in);
+		try{
+			System.out.println("Delete Category Script");
+			System.out.println("--------------------------------------------");
+			System.out.println("Enter category name:");
+			String name = convert(in.nextLine());
+			String t = "SELECT * FROM CATEGORY WHERE NAME = '" + name + "'";
+			myResultSet = sqlStatement.executeQuery(t);
+			if(myResultSet.next()){
+				System.out.println("CATEGORY deleted.");
+				String s = "DELETE FROM CATEGORY WHERE NAME = '" + name + "'";
+				myResultSet = sqlStatement.executeQuery(s);
+			}
+			else{
+				System.out.println("No CATEGORY deleted.");
+			}
+			
+			
+			
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+		
+
+
+	}
+	static void displayCategory(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		try{
+			System.out.println("Current Categories");
+			System.out.println("--------------------------------------------");
+			System.out.println("ID\tNAME\t\tDESCRIPTION");
+			String r = "SELECT ID, NAME, DESCRIPTION FROM CATEGORY";
+			myResultSet = sqlStatement.executeQuery(r);
+			while(myResultSet.next())
+			{
+			  String id = myResultSet.getObject(1).toString();
+			  String name = myResultSet.getObject(2).toString();
+			  String description = myResultSet.getObject(3).toString();
+			  System.out.printf("%4s %15s %30s %n", id, name, description);
 			}
 		}
 		catch (SQLException ex)
