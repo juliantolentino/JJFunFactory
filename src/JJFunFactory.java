@@ -722,7 +722,7 @@ public class JJFunFactory {
 					break;
 			case 10: // edit orders
 					break;
-			case 11: // edit shelf
+			case 11: shelfMenu(sqlcon, sqlStatement, myResultSet);
 					break;
 			case -1: System.out.println("Thanks for visiting our store!");
 					break;
@@ -1294,11 +1294,11 @@ public class JJFunFactory {
 	}
 	
 	
-	static void shelfMenu(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet, String userID){
+	static void shelfMenu(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
 		int decision = 0;
 		Scanner in = new Scanner(System.in);
 		do{
-			displayDiscount(sqlcon, sqlStatement, myResultSet);
+			displayShelf(sqlcon, sqlStatement, myResultSet);
 			
 			System.out.println("\nAdd Shelf: 1 "
 					+ "\nUpdate Shelf: 2 "
@@ -1412,16 +1412,16 @@ public class JJFunFactory {
 	static void deleteShelf(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
 		Scanner in = new Scanner(System.in);
 		try{
-			System.out.println("Delete Discount Script");
+			System.out.println("Delete Shelf Script");
 			System.out.println("--------------------------------------------");
 			displayDiscount(sqlcon,sqlStatement,myResultSet);
-			System.out.println("Enter discount name:");
+			System.out.println("Enter shelf name:");
 			String name = convert(in.nextLine());
-			String t = "SELECT * FROM DISCOUNT WHERE DISCOUNTNAME = '" + name + "'";
+			String t = "SELECT * FROM SHELF WHERE NAME = '" + name + "'";
 			myResultSet = sqlStatement.executeQuery(t);
 			if(myResultSet.next()){
-				System.out.println("Discount deleted.");
-				String s = "DELETE FROM DISCOUNT WHERE DISCOUNTNAME = '" + name + "'";
+				System.out.println("SHELF deleted.");
+				String s = "DELETE FROM SHELF WHERE NAME = '" + name + "'";
 				myResultSet = sqlStatement.executeQuery(s);
 			}
 			else{
@@ -1443,15 +1443,16 @@ public class JJFunFactory {
 		try{
 			System.out.println("Current Shelf");
 			System.out.println("--------------------------------------------");
-			System.out.println("NAME\t\t\tDiscount Value");
-			String r = "SELECT DISCOUNTNAME, VALUE from DISCOUNT ORDER BY VALUE DESC";
+			System.out.println("ID\tNAME\t\tAVAILABLE QUANTITY\tPRODUCTID");
+			String r = "SELECT ID, NAME, AVAILABLEQUANTITY, PRODUCTID FROM SHELF";
 			myResultSet = sqlStatement.executeQuery(r);
 			while(myResultSet.next())
 			{
-			  String name = myResultSet.getObject(1).toString();
-			  String price = myResultSet.getObject(2).toString();
-
-			  System.out.println(name.replaceAll("\\s+", " ") + "\t" + price);
+			  String id = myResultSet.getObject(1).toString();
+			  String name = myResultSet.getObject(2).toString();
+			  String availableQuantity = myResultSet.getObject(3).toString();
+			  String productID = myResultSet.getObject(4).toString();
+			  System.out.printf("%4s %15s %8s %15s%n", id, name, availableQuantity, productID);
 			}
 		}
 		catch (SQLException ex)
