@@ -264,8 +264,7 @@ public class JJFunFactory {
 			String value = "";
 			while(myResultSet.next())
 			{
-				//ResultSetMetaData rsmd = myResultSet.getMetaData();
-				//System.out.println(rsmd.getColumnCount());
+				
 				String name = myResultSet.getObject(1).toString();
 				String price = myResultSet.getObject(2).toString();
 				String stockQuantity = myResultSet.getObject(3).toString();
@@ -359,10 +358,12 @@ public class JJFunFactory {
 	}
 	
 	
+	@SuppressWarnings("resource")
 	static void placeOrder(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet, String userID){
 		Scanner in = new Scanner(System.in);
 		
 		try{
+			
 			System.out.println("Place Order Script");
 			System.out.println("--------------------------------------------");
 			System.out.println("Enter product name:");
@@ -371,8 +372,18 @@ public class JJFunFactory {
 			System.out.println("Enter quantity of product:");
 			String quantity = in.next();
 			
+			//create order ID
+			String q = "SELECT MAX(ORDERID) FROM ORDERS";
+			myResultSet = sqlStatement.executeQuery(q);
+			int orderID;
+			if(!myResultSet.next()){
+				orderID = 1;
+			} else {
+				orderID = myResultSet.getInt(1); 
+				orderID++;
+			}
 			
-			String q = "select STOCKQUANTITY FROM PRODUCTS WHERE name = '" + name + "'";
+			q = "select STOCKQUANTITY FROM PRODUCTS WHERE name = '" + name + "'";
 			myResultSet = sqlStatement.executeQuery(q);
 			boolean hasRows = false;
 			int quantityOfProduct = 0, quantityNeededByUser = 0;
@@ -389,10 +400,22 @@ public class JJFunFactory {
 			
 			
 			int priceTimesQuantity = 0;
-			String s = "select PRICE FROM PRODUCTS WHERE name = '" + name + "'";
+			String regPrice = "", discPrice = "";
+			String s = "select PRICE, VALUE FROM PRODUCTS LEFT JOIN DISCOUNT ON DISCOUNT.ID = PRODUCTS.ID WHERE name = '" + name + "'";
 			myResultSet = sqlStatement.executeQuery(s);
 			while(myResultSet.next()){
-				priceTimesQuantity = Integer.parseInt(myResultSet.getObject(1).toString());
+				regPrice = myResultSet.getString(1);
+				discPrice = myResultSet.getString(2);
+				if(myResultSet.wasNull()){
+					discPrice = "";
+				}
+				
+				if(discPrice.equals("")){
+					priceTimesQuantity = Integer.parseInt(regPrice);
+				} else {
+					priceTimesQuantity = Integer.parseInt(discPrice);
+				}
+				
 				priceTimesQuantity *= quantityNeededByUser;
 			}
 			
@@ -406,7 +429,7 @@ public class JJFunFactory {
 
 			int productQuantityFromOrders = 0;
 			int totalPriceFromOrders = 0;
-			String v = "select PRODUCTQUANTITY, TOTALPRICE FROM ORDERS WHERE PRODUCTID = '" + productID + "'";
+			String v = "select PRODUCTQUANTITY, TOTALPRICE FROM ORDERS WHERE PRODUCTID = '" + productID + "' AND PAID = 0";
 			myResultSet = sqlStatement.executeQuery(v);
 			while(myResultSet.next()){
 				productQuantityFromOrders =  Integer.parseInt(myResultSet.getObject(1).toString());
@@ -417,7 +440,7 @@ public class JJFunFactory {
 				hasRows = true;
 			}
 
-			String u = "SELECT * FROM ORDERS WHERE ID = '" + userID + "' AND PRODUCTID = '" + productID + "'";
+			String u = "SELECT * FROM ORDERS WHERE ID = '" + userID + "' AND PRODUCTID = '" + productID + "' AND PAID = 0";
 
 			myResultSet = sqlStatement.executeQuery(u);
 
@@ -429,15 +452,16 @@ public class JJFunFactory {
 					SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 					java.util.Date myDate = format.parse(getCurrentTimeStamp());
 					PreparedStatement pstmt = sqlcon.prepareStatement(
-							"INSERT INTO ORDERS ( ID, TOTALPRICE, DATEOFORDER, PAID, PRODUCTID, PRODUCTQUANTITY ) " +
-							" values (?, ?, ?, ?, ?, ? )");
-					pstmt.setString(1, userID);
-					pstmt.setString(2, Integer.toString(priceTimesQuantity));
+							"INSERT INTO ORDERS ( ORDERID, ID, TOTALPRICE, DATEOFORDER, PAID, PRODUCTID, PRODUCTQUANTITY ) " +
+							" values (?, ?, ?, ?, ?, ?, ? )");
+					pstmt.setString(1, Integer.toString(orderID));
+					pstmt.setString(2, userID);
+					pstmt.setString(3, Integer.toString(priceTimesQuantity));
 					java.sql.Date sqlDate = new java.sql.Date( myDate.getTime() );
-					pstmt.setDate(3, sqlDate);
-					pstmt.setString(4, "0");
-					pstmt.setString(5, productID);
-					pstmt.setString(6, Integer.toString(quantityNeededByUser));
+					pstmt.setDate(4, sqlDate);
+					pstmt.setString(5, "0");
+					pstmt.setString(6, productID);
+					pstmt.setString(7, Integer.toString(quantityNeededByUser));
 					pstmt.executeUpdate();
 					System.out.println("Order placed.");
 					
@@ -462,7 +486,7 @@ public class JJFunFactory {
 				
 			}
 			else{
-				String y = "UPDATE ORDERS SET PRODUCTQUANTITY = " + productQuantityFromOrders + ", TOTALPRICE = " + totalPriceFromOrders + " WHERE ID = '" + userID + "' AND PRODUCTID = '" + productID + "'";
+				String y = "UPDATE ORDERS SET PRODUCTQUANTITY = " + productQuantityFromOrders + ", TOTALPRICE = " + totalPriceFromOrders + " WHERE ID = '" + userID + "' AND PRODUCTID = '" + productID + "' and PAID = 0";
 				myResultSet = sqlStatement.executeQuery(y);
 				String z = "UPDATE PRODUCTS SET STOCKQUANTITY = '" + quantity + "' WHERE name = '" + name + "' AND STOCKQUANTITY > = '" + quantity + "'";
 				myResultSet = sqlStatement.executeQuery(z);
