@@ -805,6 +805,30 @@ public class JJFunFactory {
 				
 				pstmt.executeUpdate();
 				System.out.println("Product Added.");
+				
+				//Add product into SUPPLYS with Supplier randomly chosen
+				q = "SELECT ID FROM ( SELECT ID FROM SUPPLIER ORDER BY dbms_random.value ) WHERE rownum = 1";
+				myResultSet = sqlStatement.executeQuery(q);
+				myResultSet.next();
+				String supplierID = myResultSet.getString(1);
+				
+				q = "SELECT MAX(ID) FROM SUPPLYS ORDER BY ID";
+				myResultSet = sqlStatement.executeQuery(q);
+				myResultSet.next();
+				int supplysID = Integer.parseInt(myResultSet.getObject(1).toString()); 
+				supplysID++;
+				
+				pstmt = sqlcon.prepareStatement(
+						"INSERT INTO SUPPLYS ( ID, SUPPLIERID, PRODUCTID ) " +
+						" values (?, ?, ? )");
+				pstmt.setString(1, Integer.toString(supplysID));
+				pstmt.setString(2, supplierID);
+				pstmt.setString(3, Integer.toString(newID));
+				pstmt.executeUpdate();
+				
+				
+				
+				
 			} catch(java.text.ParseException e){
 				e.printStackTrace();
 			}
