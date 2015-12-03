@@ -686,7 +686,7 @@ public class JJFunFactory {
 					+ "\nSearch: 2 "
 					+ "\nPlace Order: 3"
 					+ "\nCheckout: 4"
-					+ "\nTotal Sales In All orders : 5"
+					+ "\nTotal Sales In All Orders : 5"
 					+ "\nEdit User Accounts : 6"
 					+ "\nEdit Products : 7"
 					+ "\nEdit Discounts : 8"
@@ -710,7 +710,7 @@ public class JJFunFactory {
 					break;
 			case 4: checkOut(sqlcon, sqlStatement, myResultSet, userID);
 					break;
-			case 5: // get the total sales in all orders for products provided by each supplier
+			case 5: totalSales(sqlcon, sqlStatement, myResultSet);
 					break;
 			case 6: usersMenu(sqlcon, sqlStatement, myResultSet);
 					break;
@@ -1508,4 +1508,59 @@ public class JJFunFactory {
 		}
 		
 	}
+	
+	static void totalSales(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		try{
+			System.out.println("Total Sales by Supplier");
+			System.out.println("--------------------------------------------");
+			System.out.println("Supplier Name\tItem Name\tTotal # Sold \tTotal $ Made");
+			
+			String q = "SELECT Products.name, SUM(Orders.ProductQuantity), SUM(Orders.TotalPrice)"
+					+ "FROM SUPPLYS "
+					+ "INNER JOIN ORDERS ON Supplys.ProductID = Orders.ProductID "
+					+ "INNER JOIN PRODUCTS ON Products.ID = ORDERS.ProductID "
+					+ "WHERE SUPPLYS.SupplierID = '1001' AND ORDERS.Paid = 1 "
+					+ "GROUP BY Products.name ";
+			myResultSet = sqlStatement.executeQuery(q);
+			
+			System.out.println("WALMART:");
+			int totalSaleSupplier = 0;
+			while(myResultSet.next()){
+				String productName = myResultSet.getObject(1).toString();
+				String productQuant = myResultSet.getObject(2).toString();
+				String totalSale = myResultSet.getObject(3).toString();
+				
+				totalSaleSupplier =+ Integer.parseInt(totalSale);
+				System.out.println("\t\t" + productName + "\t" + productQuant + "\t\t" + totalSale);
+			}
+			System.out.println("Total Sales Made: $" + totalSaleSupplier + "\n");
+			
+			q = "SELECT Products.name, SUM(Orders.ProductQuantity), SUM(Orders.TotalPrice)"
+					+ "FROM SUPPLYS "
+					+ "INNER JOIN ORDERS ON Supplys.ProductID = Orders.ProductID "
+					+ "INNER JOIN PRODUCTS ON Products.ID = ORDERS.ProductID "
+					+ "WHERE SUPPLYS.SupplierID = '1002' AND ORDERS.Paid = 1 "
+					+ "GROUP BY Products.name ";
+			myResultSet = sqlStatement.executeQuery(q);
+			
+			System.out.println("TARGET:");
+			totalSaleSupplier = 0;
+			while(myResultSet.next()){
+				String productName = myResultSet.getObject(1).toString();
+				String productQuant = myResultSet.getObject(2).toString();
+				String totalSale = myResultSet.getObject(3).toString();
+				
+				totalSaleSupplier =+ Integer.parseInt(totalSale);
+				
+				System.out.println("\t\t" + productName + "\t" + productQuant + "\t\t" + totalSale);
+			}
+			System.out.println("Total Sales Made: $" + totalSaleSupplier);
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+		
+	}	
+	
 }
