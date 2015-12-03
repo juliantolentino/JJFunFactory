@@ -742,9 +742,7 @@ public class JJFunFactory {
 	static void addProduct(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
 		Scanner in = new Scanner(System.in);
 		try{
-			
-			
-			
+
 			String q = "SELECT MAX(ID) FROM PRODUCTS ORDER BY ID";
 
 			myResultSet = sqlStatement.executeQuery(q);
@@ -1220,21 +1218,20 @@ public class JJFunFactory {
 	static void deleteUsers(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
 		Scanner in = new Scanner(System.in);
 		try{
-			System.out.println("Delete Product Script");
+			System.out.println("Delete User Script");
 			System.out.println("--------------------------------------------");
-			browse(sqlcon,sqlStatement,myResultSet);
-			System.out.println("Enter product name:");
-			String name = convert(in.nextLine());
-			String t = "SELECT * FROM PRODUCTS WHERE NAME = '" + name + "'";
+			System.out.println("Enter user name:");
+			String name = in.nextLine();
+			String t = "SELECT * FROM USERS WHERE NAME = '" + name + "'";
 			myResultSet = sqlStatement.executeQuery(t);
 			if(myResultSet.next()){
-				System.out.println("Product deleted.");
-				String s = "DELETE FROM PRODUCTS WHERE NAME = '" + name + "'";
+				System.out.println("User deleted.");
+				String s = "DELETE FROM USERS WHERE NAME = '" + name + "'";
 				myResultSet = sqlStatement.executeQuery(s);
 				
 			}
 			else{
-				System.out.println("No product deleted.");
+				System.out.println("No user deleted.");
 			}
 			
 			
@@ -1248,7 +1245,9 @@ public class JJFunFactory {
 		try{
 			System.out.println("Current Users");
 			System.out.println("--------------------------------------------");
-			System.out.println("NAME\t\tADDRESS\t\t\t\t\tIS STAFF\tEMAIL\tPASSWORD");
+			System.out.println("NAME\t\tADDRESS\t\t\t\tIS STAFF\tEMAIL\tPASSWORD");
+
+			
 			String r = "SELECT NAME, ADDRESS, IS_STAFF, EMAIL, PASSWORD FROM USERS ORDER BY ID";
 
 			myResultSet = sqlStatement.executeQuery(r);
@@ -1260,7 +1259,175 @@ public class JJFunFactory {
 			  String email = myResultSet.getObject(4).toString();
 			  String password = myResultSet.getObject(5).toString();
 
-			  System.out.println(name.replaceAll("\\s+", " ") + "\t\t" + address.replaceAll("\\s+", " ") + "\t\t\t\t\t" + is_staff.replaceAll("\\s+", " ") + "\t" + email.replaceAll("\\s+", " ") + "\t" + password);
+			 System.out.printf("%15s %15s %8s %15s %15s %n", name, address, is_staff, email, password);
+			}
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+		
+	}
+	
+	
+	static void shelfMenu(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet, String userID){
+		int decision = 0;
+		Scanner in = new Scanner(System.in);
+		do{
+			displayDiscount(sqlcon, sqlStatement, myResultSet);
+			
+			System.out.println("\nAdd Shelf: 1 "
+					+ "\nUpdate Shelf: 2 "
+					+ "\nDelete Shelf: 3"
+					+ "\nReturn to Staff Menu: -1 ");
+			
+			while(!in.hasNextInt()){
+				System.out.println("Value not an option.");
+				in.nextLine();
+			}
+			
+			decision = in.nextInt();
+			switch(decision) {
+			case 1:	
+					addShelf( sqlcon,  sqlStatement,  myResultSet);
+					break;
+			case 2: editShelf( sqlcon,  sqlStatement,  myResultSet);
+					break;
+			case 3: deleteShelf( sqlcon,  sqlStatement,  myResultSet);
+					break;
+			case -1: System.out.println("Returning to Staff Menu");
+					break;
+			default: System.out.println("Value not an option.");
+					break;
+			}
+		}while(decision != -1 );
+	}
+	static void addShelf(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		Scanner in = new Scanner(System.in);
+		try{
+			System.out.println("Add Discount Script");
+			System.out.println("--------------------------------------------");
+			System.out.println("Enter product name:");
+			String name = convert(in.nextLine());
+			String t = "SELECT ID, PRICE FROM PRODUCTS WHERE NAME = '" + name + "'";
+			
+			
+			
+			String id = "", price = "";
+			myResultSet = sqlStatement.executeQuery(t);
+			if(myResultSet.next()){
+				id = myResultSet.getObject(1).toString();
+				price = myResultSet.getObject(2).toString();
+				System.out.println("Current price: " + price);
+
+				System.out.println("Enter discount price:");
+				String discountPrice = in.next();
+				String u = "INSERT INTO DISCOUNT VALUES ('" + id + "','" + name + " DISCOUNT'," + discountPrice + ")";
+				myResultSet = sqlStatement.executeQuery(u);
+				System.out.println("Discount added.");
+			}
+			else{
+				System.out.println("Discount not added.");
+			}
+			
+			
+			
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+		
+
+
+	}
+	static void editShelf(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		Scanner in = new Scanner(System.in);
+		try{
+			System.out.println("Edit Discount Script");
+			System.out.println("--------------------------------------------");
+			System.out.println("Enter Discount name:");
+			String name = convert(in.nextLine());
+			String t = "SELECT ID, DISCOUNTNAME, VALUE FROM DISCOUNT WHERE DISCOUNTNAME = '" + name + "'";
+			myResultSet = sqlStatement.executeQuery(t);
+			String id = "";
+			String value = "";
+			if(myResultSet.next()){
+				id = myResultSet.getObject(1).toString();
+				name = myResultSet.getObject(2).toString();
+				value = myResultSet.getObject(3).toString();
+	
+				System.out.println("Discount Name: " + name + "\nDiscount Price: " + value);
+				
+				System.out.println("Update name:");
+				name = convert(in.nextLine());
+				
+				System.out.println("Update price:");
+				value = in.next();
+
+
+				String r = "UPDATE DISCOUNT SET DISCOUNTNAME = '" + name +  "', VALUE = '" + value + "' WHERE ID = '" + id + "'";
+				myResultSet = sqlStatement.executeQuery(r);
+				System.out.println("Product updated.");
+
+			} 
+			else
+				System.out.println("No product of that name.");
+			
+			
+			
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+		
+
+
+	}
+	static void deleteShelf(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		Scanner in = new Scanner(System.in);
+		try{
+			System.out.println("Delete Discount Script");
+			System.out.println("--------------------------------------------");
+			displayDiscount(sqlcon,sqlStatement,myResultSet);
+			System.out.println("Enter discount name:");
+			String name = convert(in.nextLine());
+			String t = "SELECT * FROM DISCOUNT WHERE DISCOUNTNAME = '" + name + "'";
+			myResultSet = sqlStatement.executeQuery(t);
+			if(myResultSet.next()){
+				System.out.println("Discount deleted.");
+				String s = "DELETE FROM DISCOUNT WHERE DISCOUNTNAME = '" + name + "'";
+				myResultSet = sqlStatement.executeQuery(s);
+			}
+			else{
+				System.out.println("No discount deleted.");
+			}
+			
+			
+			
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+		
+
+
+	}
+	static void displayShelf(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		try{
+			System.out.println("Current Shelf");
+			System.out.println("--------------------------------------------");
+			System.out.println("NAME\t\t\tDiscount Value");
+			String r = "SELECT DISCOUNTNAME, VALUE from DISCOUNT ORDER BY VALUE DESC";
+			myResultSet = sqlStatement.executeQuery(r);
+			while(myResultSet.next())
+			{
+			  String name = myResultSet.getObject(1).toString();
+			  String price = myResultSet.getObject(2).toString();
+
+			  System.out.println(name.replaceAll("\\s+", " ") + "\t" + price);
 			}
 		}
 		catch (SQLException ex)
