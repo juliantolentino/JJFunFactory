@@ -256,29 +256,29 @@ public class JJFunFactory {
 		try{
 			System.out.println("Current Store Selection");
 			System.out.println("--------------------------------------------");
-			System.out.println("NAME\t\tPRICE\tQUANTITY");
-			String r = "SELECT PRODUCTS.NAME, PRODUCTS.PRICE, PRODUCTS.STOCKQUANTITY, DISCOUNT.VALUE from PRODUCTS LEFT JOIN DISCOUNT ON DISCOUNT.ID = PRODUCTS.ID ORDER BY PRICE DESC";
+			System.out.println("PRODUCTID\tNAME\t\tPRICE\tQUANTITY");
+			String r = "SELECT PRODUCTS.ID, PRODUCTS.NAME, PRODUCTS.PRICE, PRODUCTS.STOCKQUANTITY, DISCOUNT.VALUE from PRODUCTS LEFT JOIN DISCOUNT ON DISCOUNT.ID = PRODUCTS.ID ORDER BY PRICE DESC";
 			//String r = "SELECT NAME, PRICE, STOCKQUANTITY from PRODUCTS ORDER BY PRICE DESC";
 
 			myResultSet = sqlStatement.executeQuery(r);
 			String value = "";
 			while(myResultSet.next())
 			{
+				String id = myResultSet.getObject(1).toString();
+				String name = myResultSet.getObject(2).toString();
+				String price = myResultSet.getObject(3).toString();
+				String stockQuantity = myResultSet.getObject(4).toString();
 				
-				String name = myResultSet.getObject(1).toString();
-				String price = myResultSet.getObject(2).toString();
-				String stockQuantity = myResultSet.getObject(3).toString();
-				
-				value = myResultSet.getString(4);
+				value = myResultSet.getString(5);
 				if(myResultSet.wasNull()){
 					value = "";
 				}
 				
 
 				if(value.equals("")){
-				  System.out.println(name + "\t" + price + "\t" + stockQuantity );
+				  System.out.println(id + "\t\t" + name + "\t" + price + "\t" + stockQuantity );
 				} else {
-					System.out.println(name + "\t" + value + "\t" + stockQuantity + "\t(DISCOUNTED!!)");
+					System.out.println(id + "\t\t" + name + "\t" + value + "\t" + stockQuantity + "\t(DISCOUNTED!!)");
 				}  
 			}
 		}
@@ -720,7 +720,7 @@ public class JJFunFactory {
 					break;
 			case 9: categoryMenu(sqlcon, sqlStatement, myResultSet);
 					break;
-			case 10: // edit orders
+			case 10: ordersMenu(sqlcon, sqlStatement, myResultSet);
 					break;
 			case 11: shelfMenu(sqlcon, sqlStatement, myResultSet);
 					break;
@@ -735,7 +735,7 @@ public class JJFunFactory {
 		int decision = 0;
 		Scanner in = new Scanner(System.in);
 		do{
-			
+			browse(sqlcon, sqlStatement, myResultSet);
 			System.out.println("\nAdd Product: 1 "
 					+ "\nUpdate Product: 2 "
 					+ "\nDelete Product: 3"
@@ -1773,5 +1773,258 @@ public class JJFunFactory {
 		}
 		
 	}	
+	
+	static void ordersMenu(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		int decision = 0;
+		Scanner in = new Scanner(System.in);
+		do{
+			displayOrders(sqlcon, sqlStatement, myResultSet);
+			
+			System.out.println("\nAdd Orders: 1 "
+					+ "\nUpdate Orders: 2 "
+					+ "\nDelete Orders: 3"
+					+ "\nReturn to Staff Menu: -1 ");
+			
+			while(!in.hasNextInt()){
+				System.out.println("Value not an option.");
+				in.nextLine();
+			}
+			
+			decision = in.nextInt();
+			switch(decision) {
+			case 1:	
+					addOrders( sqlcon,  sqlStatement,  myResultSet);
+					break;
+			case 2: editOrders( sqlcon,  sqlStatement,  myResultSet);
+					break;
+			case 3: deleteOrders( sqlcon,  sqlStatement,  myResultSet);
+					break;
+			case -1: System.out.println("Returning to Staff Menu");
+					break;
+			default: System.out.println("Value not an option.");
+					break;
+			}
+		}while(decision != -1 );
+	}
+	
+	static void addOrders(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		Scanner in = new Scanner(System.in);
+		try{
+			System.out.println("Add Orders Script");
+			System.out.println("--------------------------------------------");
+			
+			//create order ID
+			String q = "SELECT MAX(ORDERID) FROM ORDERS";
+			myResultSet = sqlStatement.executeQuery(q);
+			int orderID;
+			if(!myResultSet.next()){
+				orderID = 1;
+			} else {
+				orderID = myResultSet.getInt(1); 
+				orderID++;
+			}
+			
+			System.out.println("Enter ID of user:");
+			String id = in.next();
+			
+			System.out.println("Enter total price of order:");
+			int totalPrice = in.nextInt();
+			System.out.println("Enter date of order (formatted yyyy-mm-dd):");
+			String theDate = in.next();
+			System.out.println("Enter paid status (paid=1, unpaid=0):");
+			int paid = in.nextInt();
+			if(!(paid == 1 || paid == 0)){
+				System.out.println("must enter 0 or 1, add halted.");
+				return;
+			}
+			System.out.println("Enter productID:");
+			int productID = in.nextInt();
+			
+			System.out.println("Enter productQuantity:");
+			int productQuantity = in.nextInt();
+			
+			
+			try{
+
+				SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+				java.util.Date myDate = format.parse(theDate);
+				PreparedStatement pstmt = sqlcon.prepareStatement(
+						"INSERT INTO ORDERS ( ORDERID, ID, TOTALPRICE, DATEOFORDER, PAID, PRODUCTID, PRODUCTQUANTITY ) " +
+						" values (?, ?, ?, ?, ?, ?, ? )");
+				pstmt.setString(1, Integer.toString(orderID));
+				pstmt.setString(2, id);
+				pstmt.setString(3, Integer.toString(totalPrice));
+				java.sql.Date sqlDate = new java.sql.Date( myDate.getTime() );
+				pstmt.setDate(4, sqlDate);
+				pstmt.setString(5, Integer.toString(paid));
+				pstmt.setString(6, Integer.toString(productID));
+				pstmt.setString(7, Integer.toString(productQuantity));
+				pstmt.executeUpdate();
+				System.out.println("Order placed.");
+				
+
+			} catch(java.text.ParseException e){
+				e.printStackTrace();
+			}
+			
+			
+			
+			
+			System.out.println("Order Added.");
+			
+			
+			
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+		
+
+
+	}
+
+	static void editOrders(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		Scanner in = new Scanner(System.in);
+		
+		try{
+			
+			System.out.println("Edit Orders Script");
+			System.out.println("--------------------------------------------");
+			System.out.println("Enter Order ID:");
+			String orderID = in.next();
+			String t = "SELECT ORDERID, ID, TOTALPRICE, DATEOFORDER, PAID, PRODUCTID, PRODUCTQUANTITY FROM ORDERS WHERE ORDERID = '" + orderID + "'";
+			myResultSet = sqlStatement.executeQuery(t);
+			if(myResultSet.next()){
+				orderID = myResultSet.getObject(1).toString();
+				String id = myResultSet.getObject(2).toString();
+				String totalPrice = myResultSet.getObject(3).toString();
+				String dateOfOrder = myResultSet.getDate(4).toString();
+				String paid = myResultSet.getObject(5).toString();
+				String productID = myResultSet.getObject(6).toString();
+				String productQuantity = myResultSet.getObject(7).toString();
+	
+				System.out.println("ORDERID: " + orderID + "\nID: " + id + "\nTotal Price: " + totalPrice + "\nDate of Order: " + dateOfOrder+ "\nPaid: " + paid + "\nProduct ID: " + productID + "\nProduct Quantity: " + productQuantity);
+				
+				
+				System.out.println("Enter ID of user:");
+				id = in.next();
+	
+				System.out.println("Enter total price of order:");
+				totalPrice = in.next();
+				System.out.println("Enter date of order (formatted yyyy-mm-dd):");
+				dateOfOrder = in.next();
+				System.out.println("Enter paid status (paid=1, unpaid=0):");
+				paid = Integer.toString(in.nextInt());
+				if(!paid.equals("1") && !paid.equals("0")){
+					System.out.println("must enter 0 or 1, add halted.");
+					return;
+				}
+				System.out.println("Enter productID:");
+				productID = in.next();
+				
+				System.out.println("Enter productQuantity:");
+				productQuantity = in.next();
+				
+				
+				try{
+
+					SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+					java.util.Date myDate = format.parse(dateOfOrder);
+					PreparedStatement pstmt = sqlcon.prepareStatement(
+							"UPDATE ORDERS SET ID = ?, TOTALPRICE = ?, DATEOFORDER = ?, PAID = ?, PRODUCTID = ?, PRODUCTQUANTITY = ? WHERE ORDERID = '" + orderID + "'");
+					
+					pstmt.setString(1, id);
+					pstmt.setString(2, totalPrice);
+					java.sql.Date sqlDate = new java.sql.Date( myDate.getTime() );
+					pstmt.setDate(3, sqlDate);
+					pstmt.setString(4, paid);
+					pstmt.setString(5, productID);
+					pstmt.setString(6, productQuantity);
+					pstmt.executeUpdate();
+					System.out.println("Order updated.");
+					
+
+				} catch(java.text.ParseException e){
+					e.printStackTrace();
+				}
+				
+				
+				
+				
+
+			} 
+			else
+				System.out.println("No Order of that name.");
+			
+			
+			
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+		
+
+
+	}
+	
+	static void deleteOrders(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		Scanner in = new Scanner(System.in);
+		try{
+			System.out.println("Delete Orders Script");
+			System.out.println("--------------------------------------------");
+			System.out.println("Enter orderid:");
+			String id = in.nextLine();
+			String t = "SELECT * FROM ORDERS WHERE ORDERID = '" + id + "'";
+			myResultSet = sqlStatement.executeQuery(t);
+			if(myResultSet.next()){
+				System.out.println("Order deleted.");
+				t = "DELETE FROM ORDERS WHERE ORDERID = '" + id + "'";
+				myResultSet = sqlStatement.executeQuery(t);
+			}
+			else{
+				System.out.println("No order deleted.");
+			}
+			
+			
+			
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+		
+
+
+	}
+	
+	static void displayOrders(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		try{
+			System.out.println("Current Orders");
+			System.out.println("--------------------------------------------");
+			System.out.println("ORDERID\tUSER ID\tTOTALPRICE\tDATEOFORDER\tPAID\tPRODUCTID\tPRODUCTQUANTITY");
+
+			String r = "SELECT ORDERID, ID, TOTALPRICE, DATEOFORDER, PAID, PRODUCTID, PRODUCTQUANTITY FROM ORDERS ORDER BY ORDERID";
+
+			myResultSet = sqlStatement.executeQuery(r);
+			while(myResultSet.next())
+			{
+			  String orderID = myResultSet.getObject(1).toString();
+			  String id = myResultSet.getObject(2).toString();
+			  String totalPrice = myResultSet.getObject(3).toString();
+			  String dateOfOrder = myResultSet.getDate(4).toString();
+			  String paid = myResultSet.getObject(5).toString();
+			  String productID = myResultSet.getObject(6).toString();
+			  String productQuantity = myResultSet.getObject(7).toString();
+
+			  System.out.printf("%4s %4s %8s %25s %4s %20s %5s%n", orderID, id, totalPrice, dateOfOrder, paid, productID, productQuantity);
+			}
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+	}
 	
 }
