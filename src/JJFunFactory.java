@@ -1741,7 +1741,7 @@ public class JJFunFactory {
 				String productQuant = myResultSet.getObject(2).toString();
 				String totalSale = myResultSet.getObject(3).toString();
 				
-				totalSaleSupplier =+ Integer.parseInt(totalSale);
+				totalSaleSupplier = totalSaleSupplier + Integer.parseInt(totalSale);
 				System.out.println("\t\t" + productName + "\t" + productQuant + "\t\t" + totalSale);
 			}
 			System.out.println("Total Sales Made: $" + totalSaleSupplier + "\n");
@@ -1761,7 +1761,7 @@ public class JJFunFactory {
 				String productQuant = myResultSet.getObject(2).toString();
 				String totalSale = myResultSet.getObject(3).toString();
 				
-				totalSaleSupplier =+ Integer.parseInt(totalSale);
+				totalSaleSupplier = totalSaleSupplier + Integer.parseInt(totalSale);
 				
 				System.out.println("\t\t" + productName + "\t" + productQuant + "\t\t" + totalSale);
 			}
