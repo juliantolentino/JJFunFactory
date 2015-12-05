@@ -802,6 +802,88 @@ public class JJFunFactory {
 				java.sql.Date sqlDate = new java.sql.Date( myDate.getTime() );
 				pstmt.setDate(6, sqlDate);
 				
+				/*
+				
+				System.out.println("Does this category have a parent or child or neither? (Enter PARENT, CHILD or NEITHER):");
+				String parentOrChild = "";
+				do{
+					parentOrChild = in.next();
+					
+					if (parentOrChild.equals("PARENT")){
+						displayCategory(sqlcon, sqlStatement, myResultSet);
+						boolean validCategory = false;
+						System.out.println("Enter the parent category id:");
+						do{
+							while(!in.hasNextInt()){
+								System.out.println("Value not an option.");
+								in.nextLine();
+							}
+							int category = in.nextInt();
+							q = "SELECT * FROM CATEGORY WHERE ID = " + category;
+							myResultSet = sqlStatement.executeQuery(q);
+							if(myResultSet.next()){
+								validCategory = true;
+								q = "SELECT MAX(ID) FROM PRODUCTCATEGORY";
+
+								
+							}
+							else{
+								System.out.println("Category doesn't exist.");
+								return;
+							}
+
+						}
+						while(validCategory == false);
+						
+						
+						
+						
+					}
+					else if (parentOrChild.equals("CHILD")){
+						System.out.println("Enter the child category:");
+						String child = in.next();
+						
+					}
+					else if (parentOrChild.equals("NEITHER")){
+						break;
+					}
+					else
+						System.out.println("Value not an option.");
+						
+				}while(!parentOrChild.equals("PARENT") && !parentOrChild.equals("CHILD") && !parentOrChild.equals("NEITHER"));
+
+				*/
+				
+				displayShelf(sqlcon, sqlStatement, myResultSet);
+				System.out.println("Enter its shelf:");
+				String shelf = convert(in.nextLine());
+				String t = "SELECT * FROM SHELF WHERE NAME = '" + shelf + "'";
+				myResultSet = sqlStatement.executeQuery(t);
+				if(myResultSet.next()){
+					q = "SELECT MAX(ID) FROM SHELF";
+					myResultSet = sqlStatement.executeQuery(q);
+					myResultSet.next();
+					
+					int maxIDshelf = Integer.parseInt(myResultSet.getObject(1).toString()); 
+					int newIDshelf = maxIDshelf + 1;
+					PreparedStatement pstmt1 = sqlcon.prepareStatement(
+							"INSERT INTO SHELF ( ID, NAME, AVAILABLEQUANTITY, PRODUCTID ) " +
+							" values (?, ?, ?, ? )");
+					pstmt1.setString(1, Integer.toString(newIDshelf));
+					pstmt1.setString(2, shelf);
+					pstmt1.setString(3, stockQuantity);
+					pstmt1.setString(4, Integer.toString(newID));
+					pstmt1.executeUpdate();
+					
+
+				}
+				else{
+					System.out.println("Not an existing shelf.");
+					return;
+				}
+				
+
+				
 				
 				System.out.println("-------\nAvailable categories\nID\t\tNAME");
 				String s = "SELECT ID, NAME FROM CATEGORY ORDER BY ID";
@@ -814,6 +896,7 @@ public class JJFunFactory {
 				}
 				
 				String productCategoryInsertion = "";
+				String parentInsertionProduct = "";
 				boolean validCategory = false;
 				System.out.println("Enter category number:");
 				do{
@@ -835,7 +918,9 @@ public class JJFunFactory {
 						int maxIdProductCategory = Integer.parseInt(myResultSet.getObject(1).toString()); 
 						int newIdProductCategory = maxIdProductCategory + 1;
 						
-						productCategoryInsertion = "INSERT INTO PRODUCTCATEGORY VALUES(" + newIdProductCategory + "," + category + "," + newID + ")";								
+						productCategoryInsertion = "INSERT INTO PRODUCTCATEGORY VALUES(" + newIdProductCategory + "," + category + "," + newID + ")";	
+						
+						
 
 					}
 					else{
@@ -850,6 +935,8 @@ public class JJFunFactory {
 			
 				
 				pstmt.executeUpdate();
+				
+				
 				System.out.println("Product Added.");
 				
 				//Add product into SUPPLYS with Supplier randomly chosen
@@ -905,6 +992,7 @@ public class JJFunFactory {
 			String price = "";
 			String stockQuantity = "";
 			String description = "";
+			String shelf = "";
 			if(myResultSet.next()){
 				id = myResultSet.getObject(1).toString();
 				name = myResultSet.getObject(2).toString();
@@ -926,6 +1014,41 @@ public class JJFunFactory {
 				System.out.println("Update description:");
 				in.nextLine();
 				description = in.nextLine();
+				
+				displayShelf(sqlcon, sqlStatement, myResultSet);
+				System.out.println("Update shelf:");
+				shelf = convert(in.nextLine());
+				String a = "SELECT * FROM SHELF WHERE NAME = '" + shelf + "'";
+				myResultSet = sqlStatement.executeQuery(a);
+				if(myResultSet.next()){
+					String b = "SELECT ID FROM SHELF WHERE PRODUCTID = '" + id + "'";
+					myResultSet = sqlStatement.executeQuery(b);
+					if(myResultSet.next()){
+						String idOfShelfToBeDeleted = myResultSet.getObject(1).toString();
+						String s = "DELETE FROM SHELF WHERE ID = '" + idOfShelfToBeDeleted + "'";
+						myResultSet = sqlStatement.executeQuery(s);
+					}
+					
+					a = "SELECT MAX(ID) FROM SHELF";
+					myResultSet = sqlStatement.executeQuery(a);
+					myResultSet.next();
+					
+					int maxIDshelf = Integer.parseInt(myResultSet.getObject(1).toString()); 
+					int newIDshelf = maxIDshelf + 1;
+					PreparedStatement pstmt1 = sqlcon.prepareStatement(
+							"INSERT INTO SHELF ( ID, NAME, AVAILABLEQUANTITY, PRODUCTID ) " +
+							" values (?, ?, ?, ? )");
+					pstmt1.setString(1, Integer.toString(newIDshelf));
+					pstmt1.setString(2, shelf);
+					pstmt1.setString(3, stockQuantity);
+					pstmt1.setString(4, id);
+					pstmt1.executeUpdate();	
+					
+				}
+				else{
+					System.out.println("Not an existing shelf.");
+					return;
+				}
 
 				String r = "UPDATE PRODUCTS SET NAME = '" + name +  "', PRICE = '" + price + "', STOCKQUANTITY = '" + stockQuantity + "', DESCRIPTION = '" + description + "' WHERE ID = '" + id + "'";
 				myResultSet = sqlStatement.executeQuery(r);
@@ -1341,21 +1464,23 @@ public class JJFunFactory {
 		try{
 			System.out.println("Current Users");
 			System.out.println("--------------------------------------------");
-			System.out.println("NAME\t\tADDRESS\t\t\t\tIS STAFF\tEMAIL\tPASSWORD");
+			System.out.println("ID\tNAME\t\tADDRESS\t\t\t\tIS STAFF\tEMAIL\tPASSWORD");
 
 			
-			String r = "SELECT NAME, ADDRESS, IS_STAFF, EMAIL, PASSWORD FROM USERS ORDER BY ID";
+			String r = "SELECT ID, NAME, ADDRESS, IS_STAFF, EMAIL, PASSWORD FROM USERS ORDER BY ID";
 
 			myResultSet = sqlStatement.executeQuery(r);
 			while(myResultSet.next())
 			{
-			  String name = myResultSet.getObject(1).toString();
-			  String address = myResultSet.getObject(2).toString();
-			  String is_staff = myResultSet.getObject(3).toString();
-			  String email = myResultSet.getObject(4).toString();
-			  String password = myResultSet.getObject(5).toString();
+				String id = myResultSet.getObject(1).toString();
 
-			 System.out.printf("%15s %15s %8s %15s %15s %n", name, address, is_staff, email, password);
+			  String name = myResultSet.getObject(2).toString();
+			  String address = myResultSet.getObject(3).toString();
+			  String is_staff = myResultSet.getObject(4).toString();
+			  String email = myResultSet.getObject(5).toString();
+			  String password = myResultSet.getObject(6).toString();
+
+			 System.out.printf("%2s %15s %15s %8s %15s %15s %n", id, name, address, is_staff, email, password);
 			}
 		}
 		catch (SQLException ex)
@@ -1447,11 +1572,11 @@ public class JJFunFactory {
 		try{
 			System.out.println("Edit SHELF Script");
 			System.out.println("--------------------------------------------");
-			System.out.println("Enter SHELF name:");
-			String name = convert(in.nextLine());
-			String t = "SELECT ID, NAME, AVAILABLEQUANTITY, PRODUCTID FROM SHELF WHERE NAME = '" + name + "'";
+			System.out.println("Enter SHELF ID:");
+			String id = Integer.toString(in.nextInt());
+			String t = "SELECT ID, NAME, AVAILABLEQUANTITY, PRODUCTID FROM SHELF WHERE ID = '" + id + "'";
 			myResultSet = sqlStatement.executeQuery(t);
-			String id = "";
+			String name = "";
 			String availableQuantity = "";
 			String productID = "";
 			if(myResultSet.next()){
@@ -1470,7 +1595,9 @@ public class JJFunFactory {
 				System.out.println("ID: " + id + "\nName: " + name + "\nAvailable Quantity: " + availableQuantity + "\nProduct name: " + productName);
 				
 				System.out.println("Update shelf name:");
+				in.nextLine();
 				name = convert(in.nextLine());
+				
 				
 				System.out.println("Update available quantity:");
 				availableQuantity = in.next();
@@ -1510,13 +1637,13 @@ public class JJFunFactory {
 		try{
 			System.out.println("Delete Shelf Script");
 			System.out.println("--------------------------------------------");
-			System.out.println("Enter shelf name:");
-			String name = convert(in.nextLine());
-			String t = "SELECT * FROM SHELF WHERE NAME = '" + name + "'";
+			System.out.println("Enter shelf id:");
+			String id = Integer.toString(in.nextInt());
+			String t = "SELECT * FROM SHELF WHERE ID = '" + id + "'";
 			myResultSet = sqlStatement.executeQuery(t);
 			if(myResultSet.next()){
 				System.out.println("SHELF deleted.");
-				String s = "DELETE FROM SHELF WHERE NAME = '" + name + "'";
+				String s = "DELETE FROM SHELF WHERE NAME = '" + id + "'";
 				myResultSet = sqlStatement.executeQuery(s);
 			}
 			else{
@@ -1613,7 +1740,104 @@ public class JJFunFactory {
 			String description = convert(in.nextLine());
 			pstmt.setString(3, description);	
 			
+			
 			pstmt.executeUpdate();
+			
+			boolean validCategory = false;
+		
+			// add to to parent table
+			System.out.println("Does this category have a parent or child or neither? (Enter PARENT, CHILD or NEITHER):");
+			String parentOrChild = "", parentInsertion = "";
+			do{
+				parentOrChild = convert(in.next());
+				
+				if (parentOrChild.equals("PARENT")){
+					System.out.println("Enter the parent category id:");
+					do{
+						while(!in.hasNextInt()){
+							System.out.println("Value not an option.");
+							in.nextLine();
+						}
+						int category = in.nextInt();
+						q = "SELECT * FROM CATEGORY WHERE ID = " + category;
+						myResultSet = sqlStatement.executeQuery(q);
+						if(myResultSet.next()){
+							validCategory = true;
+							q = "SELECT MAX(ID) FROM PARENT";
+							myResultSet = sqlStatement.executeQuery(q);
+							myResultSet.next();
+							int maxIdParent = 0;
+							if(!myResultSet.next()){
+								maxIdParent = 1;
+							} else {
+								maxIdParent = myResultSet.getInt(1); 
+								maxIdParent++;
+							}
+							int newIdParent = maxIdParent + 1;
+							
+							parentInsertion = "INSERT INTO PARENT VALUES(" + newIdParent + ",'" + category + "','" + newID + "')";								
+							myResultSet = sqlStatement.executeQuery(parentInsertion);
+
+							
+						}
+						else{
+							System.out.println("Category doesn't exist.");
+							return;
+						}
+
+					}
+					while(validCategory == false);
+					
+					
+					
+					
+				}
+				else if (parentOrChild.equals("CHILD")){
+					System.out.println("Enter the child category id:");
+					do{
+						while(!in.hasNextInt()){
+							System.out.println("Value not an option.");
+							in.nextLine();
+						}
+						int category = in.nextInt();
+						q = "SELECT * FROM CATEGORY WHERE ID = " + category;
+						myResultSet = sqlStatement.executeQuery(q);
+						if(myResultSet.next()){
+							validCategory = true;
+							q = "SELECT MAX(ID) FROM PARENT";
+							myResultSet = sqlStatement.executeQuery(q);
+							myResultSet.next();
+							int maxIdParent = 0;
+							if(!myResultSet.next()){
+								maxIdParent = 1;
+							} else {
+								maxIdParent = myResultSet.getInt(1); 
+								maxIdParent++;
+							}
+							int newIdParent = maxIdParent + 1;
+							
+							parentInsertion = "INSERT INTO PARENT VALUES(" + newIdParent + ",'" + newID + "','" + category + "')";								
+							myResultSet = sqlStatement.executeQuery(parentInsertion);
+
+							
+						}
+						else{
+							System.out.println("Category doesn't exist.");
+							return;
+						}
+
+					}
+					while(validCategory == false);
+					
+				}
+				else if (parentOrChild.equals("NEITHER")){
+					break;
+				}
+				else
+					System.out.println("Value not an option.");
+					
+			}while(!parentOrChild.equals("PARENT") && !parentOrChild.equals("CHILD") && !parentOrChild.equals("NEITHER"));
+			
 			System.out.println("Category Added.");
 		}
 		catch (SQLException ex)
@@ -1651,6 +1875,109 @@ public class JJFunFactory {
 
 				String u = "UPDATE CATEGORY SET NAME = '" + name +  "', DESCRIPTION = '" + description +  "' WHERE ID = '" + id + "'";
 				myResultSet = sqlStatement.executeQuery(u);
+				
+				
+				String q = "SELECT MAX(ID) FROM CATEGORY";
+				myResultSet = sqlStatement.executeQuery(q);
+				myResultSet.next();
+				
+				int maxID = Integer.parseInt(myResultSet.getObject(1).toString()); 
+				int newID = maxID + 1;
+				boolean validCategory = false;
+				System.out.println("Does this category have a parent or child or neither? (Enter PARENT, CHILD or NEITHER):");
+				String parentOrChild = "", parentInsertion = "";
+				do{
+					parentOrChild = convert(in.next());
+					
+					if (parentOrChild.equals("PARENT")){
+						System.out.println("Enter the parent category id:");
+						do{
+							while(!in.hasNextInt()){
+								System.out.println("Value not an option.");
+								in.nextLine();
+							}
+							int category = in.nextInt();
+							q = "SELECT * FROM CATEGORY WHERE ID = " + category;
+							myResultSet = sqlStatement.executeQuery(q);
+							if(myResultSet.next()){
+								validCategory = true;
+								q = "SELECT MAX(ID) FROM PARENT";
+								myResultSet = sqlStatement.executeQuery(q);
+								myResultSet.next();
+								int maxIdParent = 0;
+								if(!myResultSet.next()){
+									maxIdParent = 1;
+								} else {
+									maxIdParent = myResultSet.getInt(1); 
+									maxIdParent++;
+								}
+								int newIdParent = maxIdParent + 1;
+								
+								parentInsertion = "INSERT INTO PARENT VALUES(" + newIdParent + ",'" + category + "','" + newID + "')";								
+								myResultSet = sqlStatement.executeQuery(parentInsertion);
+
+								
+							}
+							else{
+								System.out.println("Category doesn't exist.");
+								return;
+							}
+
+						}
+						while(validCategory == false);
+						
+						
+						
+						
+					}
+					else if (parentOrChild.equals("CHILD")){
+						System.out.println("Enter the child category id:");
+						do{
+							while(!in.hasNextInt()){
+								System.out.println("Value not an option.");
+								in.nextLine();
+							}
+							int category = in.nextInt();
+							q = "SELECT * FROM CATEGORY WHERE ID = " + category;
+							myResultSet = sqlStatement.executeQuery(q);
+							if(myResultSet.next()){
+								validCategory = true;
+								q = "SELECT MAX(ID) FROM PARENT";
+								myResultSet = sqlStatement.executeQuery(q);
+								myResultSet.next();
+								int maxIdParent = 0;
+								if(!myResultSet.next()){
+									maxIdParent = 1;
+								} else {
+									maxIdParent = myResultSet.getInt(1); 
+									maxIdParent++;
+								}
+								int newIdParent = maxIdParent + 1;
+								
+								parentInsertion = "INSERT INTO PARENT VALUES(" + newIdParent + ",'" + newID + "','" + category + "')";								
+								myResultSet = sqlStatement.executeQuery(parentInsertion);
+
+								
+							}
+							else{
+								System.out.println("Category doesn't exist.");
+								return;
+							}
+
+						}
+						while(validCategory == false);
+						
+					}
+					else if (parentOrChild.equals("NEITHER")){
+						break;
+					}
+					else
+						System.out.println("Value not an option.");
+						
+				}while(!parentOrChild.equals("PARENT") && !parentOrChild.equals("CHILD") && !parentOrChild.equals("NEITHER"));
+				
+				
+				
 				System.out.println("Category updated.");
 
 			} 
@@ -1703,7 +2030,7 @@ public class JJFunFactory {
 			System.out.println("Current Categories");
 			System.out.println("--------------------------------------------");
 			System.out.println("ID\tNAME\t\tDESCRIPTION");
-			String r = "SELECT ID, NAME, DESCRIPTION FROM CATEGORY";
+			String r = "SELECT ID, NAME, DESCRIPTION FROM CATEGORY ORDER BY ID ";
 			myResultSet = sqlStatement.executeQuery(r);
 			while(myResultSet.next())
 			{
@@ -1741,7 +2068,7 @@ public class JJFunFactory {
 				String productQuant = myResultSet.getObject(2).toString();
 				String totalSale = myResultSet.getObject(3).toString();
 				
-				totalSaleSupplier = totalSaleSupplier + Integer.parseInt(totalSale);
+				totalSaleSupplier =+ Integer.parseInt(totalSale);
 				System.out.println("\t\t" + productName + "\t" + productQuant + "\t\t" + totalSale);
 			}
 			System.out.println("Total Sales Made: $" + totalSaleSupplier + "\n");
@@ -1761,7 +2088,7 @@ public class JJFunFactory {
 				String productQuant = myResultSet.getObject(2).toString();
 				String totalSale = myResultSet.getObject(3).toString();
 				
-				totalSaleSupplier = totalSaleSupplier + Integer.parseInt(totalSale);
+				totalSaleSupplier =+ Integer.parseInt(totalSale);
 				
 				System.out.println("\t\t" + productName + "\t" + productQuant + "\t\t" + totalSale);
 			}
@@ -1816,7 +2143,6 @@ public class JJFunFactory {
 			System.out.println("Add Orders Script");
 			System.out.println("--------------------------------------------");
 			
-			//create order ID
 			String q = "SELECT MAX(ORDERID) FROM ORDERS";
 			myResultSet = sqlStatement.executeQuery(q);
 			int orderID;
@@ -1847,6 +2173,7 @@ public class JJFunFactory {
 			int productQuantity = in.nextInt();
 			
 			
+			
 			try{
 
 				SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
@@ -1863,28 +2190,17 @@ public class JJFunFactory {
 				pstmt.setString(6, Integer.toString(productID));
 				pstmt.setString(7, Integer.toString(productQuantity));
 				pstmt.executeUpdate();
-				System.out.println("Order placed.");
-				
+				System.out.println("Order placed.");	
 
 			} catch(java.text.ParseException e){
 				e.printStackTrace();
 			}
-			
-			
-			
-			
-			System.out.println("Order Added.");
-			
-			
-			
+
 		}
 		catch (SQLException ex)
 		{
 			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
 		}
-		
-
-
 	}
 
 	static void editOrders(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
@@ -2061,4 +2377,5 @@ public class JJFunFactory {
 			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
 		}
 	}
+	
 }
