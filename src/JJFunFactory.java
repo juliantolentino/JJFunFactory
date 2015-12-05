@@ -1783,6 +1783,7 @@ public class JJFunFactory {
 			System.out.println("\nAdd Orders: 1 "
 					+ "\nUpdate Orders: 2 "
 					+ "\nDelete Orders: 3"
+					+ "\nView Current Order Shelf Location: 4"
 					+ "\nReturn to Staff Menu: -1 ");
 			
 			while(!in.hasNextInt()){
@@ -1798,6 +1799,8 @@ public class JJFunFactory {
 			case 2: editOrders( sqlcon,  sqlStatement,  myResultSet);
 					break;
 			case 3: deleteOrders( sqlcon,  sqlStatement,  myResultSet);
+					break;
+			case 4: orderShelfLocation( sqlcon,  sqlStatement,  myResultSet);
 					break;
 			case -1: System.out.println("Returning to Staff Menu");
 					break;
@@ -2027,4 +2030,35 @@ public class JJFunFactory {
 		}
 	}
 	
+	static void orderShelfLocation(Connection sqlcon, Statement sqlStatement, ResultSet myResultSet){
+		try{
+			System.out.println("Shelf location for Current Orders");
+			System.out.println("--------------------------------------------");
+			System.out.println("USER ID\tITEM NAME\tSHELF LOCATION");
+
+			String q = "SELECT Orders.ID, Products.Name, Shelf.Name "
+					+ "FROM ORDERS "
+					+ "INNER JOIN SHELF ON Shelf.ProductID = Orders.ProductID "
+					+ "INNER JOIN PRODUCTS ON Products.ID = ORDERS.ProductID "
+					+ "WHERE ORDERS.Paid = 1 "
+					+ "GROUP BY Products.Name, Orders.ID, Shelf.Name "					
+					+ "ORDER BY ORDERS.ID ";
+			myResultSet = sqlStatement.executeQuery(q);
+			
+			while(myResultSet.next()){
+				String userID  = myResultSet.getObject(1).toString();
+				String product = myResultSet.getObject(2).toString();
+				String shelf   = myResultSet.getObject(3).toString();
+				
+				System.out.println(userID + "\t" + product + "\t" + shelf);
+				
+			}
+			
+			
+		}
+		catch (SQLException ex)
+		{
+			System.out.println("SQLException:" + ex.getMessage() + "<BR>");
+		}
+	}
 }
